@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Flux — work in progress</title>
+<meta name="description" content="Flux is moving to a new design. The bot, support and the app are available as usual." />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Flux — work in progress" />
+<meta property="og:description" content="Flux is moving to a new design. The launcher is in beta for selected testers, and support is available as usual." />
+<meta name="twitter:card" content="summary" />
+<link rel="icon" type="image/svg+xml" href="logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Onest:wght@400;500;600;800&display=swap" rel="stylesheet" />
+<script>document.documentElement.classList.add("js")</script>
+<style>
+:root{
+  --bg:#cfe0ff; --bg2:#b5cdfa; --ink:#06163a; --soft:rgba(6,22,58,.82); --mute:rgba(6,22,58,.55);
+  --blue:#1747e6; --line:rgba(6,22,58,.3); --on-ink:#cfe0ff;
+  --win:#f4f8ff; --win-side:#e3ecff; --win-card:#ffffff; --win-line:rgba(6,22,58,.1); --win-shadow:rgba(6,22,58,.28);
+  --ease:cubic-bezier(.16,1,.3,1);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#050e26;--bg2:#071a45;--ink:#e6efff;--soft:rgba(230,239,255,.84);--mute:rgba(230,239,255,.5);--blue:#5a95ff;--line:rgba(230,239,255,.3);--on-ink:#050e26;
+    --win:#0b1636;--win-side:#08112b;--win-card:#12204a;--win-line:rgba(230,239,255,.1);--win-shadow:rgba(0,0,0,.6)}
+}
+:root[data-theme="dark"]{--bg:#050e26;--bg2:#071a45;--ink:#e6efff;--soft:rgba(230,239,255,.84);--mute:rgba(230,239,255,.5);--blue:#5a95ff;--line:rgba(230,239,255,.3);--on-ink:#050e26;
+  --win:#0b1636;--win-side:#08112b;--win-card:#12204a;--win-line:rgba(230,239,255,.1);--win-shadow:rgba(0,0,0,.6)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:linear-gradient(180deg,var(--bg) 0%,var(--bg) 55%,var(--bg2) 100%);color:var(--ink);
+  font-family:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:url("background.jpg") center/cover no-repeat}
+/* tint over the image so text stays readable; raise/lower --bg-dim (0-100%) to taste */
+.bg::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--bg) var(--bg-dim,45%),transparent),color-mix(in srgb,var(--bg2) calc(var(--bg-dim,45%) + 20%),transparent))}
+.grain{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.04;
+  background-image:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/><feColorMatrix type="saturate" values="0"/></filter><rect width="240" height="240" filter="url(%23n)"/></svg>');background-size:240px}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+main{position:relative;z-index:2;max-width:860px;min-height:100%;display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(28px,6vh,64px) clamp(20px,4vw,48px) 12dvh}
+h1{font-family:"Playfair Display",Georgia,serif;font-weight:500;text-transform:uppercase;font-size:clamp(34px,4.8vw,64px);line-height:1.04;letter-spacing:.015em}
+main p{margin-top:18px;font-size:17px;line-height:1.6;max-width:46ch;color:var(--soft)}
+
+/* split text */
+.wd{display:inline-block;white-space:nowrap}
+.mask .wd{overflow:hidden;vertical-align:top;padding:.08em 0 .22em;margin:-.08em 0 -.22em}
+.js .c{display:inline-block;opacity:0;transform:translateY(105%) rotate(4deg);transform-origin:0 100%;filter:blur(6px);
+  animation:rise 1.1s var(--ease) forwards;animation-delay:calc(var(--d,0s) + var(--i)*38ms)}
+@keyframes rise{to{opacity:1;transform:none;filter:blur(0)}}
+.js .pw{display:inline-block;opacity:0;transform:translateY(10px);filter:blur(5px);
+  animation:soft .9s var(--ease) forwards;animation-delay:calc(var(--d,0s) + var(--i)*22ms)}
+@keyframes soft{to{opacity:1;transform:none;filter:blur(0)}}
+
+/* headline: bigger, slower entrance */
+.js h1 .c{transform:translateY(112%) rotate(9deg);filter:blur(10px);animation-duration:1.4s;animation-delay:calc(var(--d) + var(--i)*55ms)}
+
+/* appear */
+.js .in{opacity:0;transform:translateY(22px) scale(.97);animation:appear 1s var(--ease) forwards;animation-delay:var(--d,0s)}
+@keyframes appear{to{opacity:1;transform:none}}
+
+/* buttons */
+.actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:30px}
+.btn{position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;gap:10px;text-decoration:none;
+  border-radius:999px;padding:15px 26px;font-size:16px;font-weight:600;letter-spacing:.01em;line-height:1;white-space:nowrap;
+  transition:transform .5s var(--ease),color .45s var(--ease),border-color .45s var(--ease)}
+.btn::before{content:"";position:absolute;inset:-1px;z-index:-1;border-radius:inherit;transform:translateY(101%);transition:transform .6s var(--ease)}
+.btn:hover::before,.btn:focus-visible::before{transform:none}
+.btn:hover{transform:translateY(-3px)}
+.btn:active{transform:translateY(0) scale(.97);transition-duration:.15s}
+.btn svg{width:18px;height:18px;flex:none;transition:transform .6s var(--ease)}
+.btn:hover svg{transform:translate(3px,-2px) rotate(-8deg)}
+.btn-primary{background:var(--ink);color:var(--on-ink)}
+.btn-primary::before{background:var(--blue)}
+.btn-primary:hover{color:#fff}
+.btn-ghost{color:var(--ink);border:1px solid var(--line)}
+.btn-ghost::before{background:var(--ink)}
+.btn-ghost:hover{color:var(--on-ink);border-color:var(--ink)}
+
+/* unavailable button */
+.btn-off{cursor:not-allowed;opacity:.55;border-style:dashed}
+.btn-off span{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:var(--blue);text-decoration-skip-ink:none}
+.btn-off:hover{transform:none;color:var(--ink);border-color:var(--line)}
+.btn-off:hover::before{transform:translateY(101%)}   /* kill the fill slide-in */
+.btn-off:hover svg{transform:none}                   /* kill the icon wiggle */
+
+a:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
+.farewell{display:flex;align-items:center;gap:10px;margin-top:26px;color:var(--mute);font-size:13px}
+.farewell svg{height:16px;width:auto;color:var(--ink);opacity:.4}
+.farewell s{text-decoration-color:var(--blue)}
+
+/* giant text */
+.giant{position:fixed;left:0;right:0;bottom:0;z-index:1;pointer-events:none;font-size:clamp(52px,7.5vw,170px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.giant-inner{display:block;padding-left:clamp(20px,4vw,48px);font-weight:800;line-height:1.4;letter-spacing:-.03em;white-space:nowrap;transform:translateY(.09em)}
+
+/* paid -> ? -> free : "free" takes the exact spot where "paid" was */
+.swap{position:relative}
+.strike{display:none}                       /* no-JS fallback shows just "free" */
+.site{color:var(--blue)}
+.js .swap{display:inline-grid}
+.js .strike,.js .site{display:block;grid-area:1/1}
+
+/* 1) "paid" appears, then turns a little transparent */
+.js .strike .wd{animation:dim .6s ease 2.4s forwards}
+@keyframes dim{to{opacity:.5}}
+
+/* 2) a "?" pops in on top of it */
+.js .swap::after{content:"?";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:1.15em;line-height:1;font-weight:800;color:var(--blue);text-shadow:0 0 .4em rgba(23,71,230,.5);
+  opacity:0;pointer-events:none;
+  animation:qin .75s cubic-bezier(.34,1.56,.64,1) 2.7s forwards,qout .6s cubic-bezier(.7,0,.84,0) 4.3s forwards}
+@keyframes qin{from{opacity:0;transform:scale(.3) rotate(-24deg)}to{opacity:1;transform:none}}
+@keyframes qout{to{opacity:0;transform:scale(1.7) rotate(10deg);filter:blur(10px)}}
+
+/* 3) "paid" slides away letter by letter (the "?" fades out with it) */
+.js .strike .c{
+  animation:rise 1.1s var(--ease) forwards,out .75s cubic-bezier(.7,0,.84,0) forwards;
+  animation-delay:calc(var(--d,0s) + var(--i)*38ms),calc(4.3s + (var(--i) - 12)*60ms)}
+@keyframes out{to{opacity:0;transform:translateY(-115%) rotate(-7deg);filter:blur(8px)}}
+
+/* 4) "free" rises into the same spot */
+.js .site .c{animation-name:rise;animation-duration:1.1s;animation-timing-function:cubic-bezier(.34,1.25,.64,1);
+  animation-delay:calc(4.75s + (var(--i) - 16)*70ms)}
+br.m{display:none}
+
+/* ---------- top-left logo ---------- */
+.brand{
+  position:fixed;
+  z-index:6;                                     /* above .grain (z-index:5) */
+  left:clamp(20px,4vw,48px);                     /* flush with main's padding */
+  top:calc(clamp(20px,4vw,48px) + env(safe-area-inset-top,0px));
+  width:clamp(52px,6.5vw,96px);
+  height:auto;
+  display:block;
+  filter:drop-shadow(0 12px 28px rgba(23,71,230,.28));
+  transition:transform .6s var(--ease),filter .6s var(--ease);
+}
+a.brand{pointer-events:auto}
+a.brand:hover{transform:translateY(-3px) rotate(-3deg);filter:drop-shadow(0 16px 34px rgba(23,71,230,.4))}
+a.brand:active{transform:translateY(0) scale(.97);transition-duration:.15s}
+a.brand:focus-visible{outline:2px solid var(--blue);outline-offset:6px;border-radius:8px}
+@media (max-width:760px){
+  .brand{width:clamp(40px,11vw,56px)}
+}
+
+/* ---------- launcher mockup (right side) ---------- */
+.mock-wrap{display:none}
+@media (min-width:1100px){
+  main{max-width:min(860px,57vw)}
+  .mock-wrap{display:block;position:fixed;z-index:1;right:clamp(60px,9vw,180px);top:48%;
+    width:clamp(520px,50vw,960px);transform:translateY(-50%);pointer-events:none;perspective:1800px}
+}
+.follow{position:relative}
+.mock-title{position:absolute;left:0;right:0;text-align:center;bottom:100%;margin-bottom:clamp(12px,1.6vw,26px);white-space:nowrap;
+  font-family:"Playfair Display",Georgia,serif;font-weight:500;text-transform:uppercase;letter-spacing:.04em;line-height:1;
+  font-size:clamp(26px,3vw,52px);color:var(--blue);text-shadow:0 0 28px rgba(23,71,230,.55),0 0 60px rgba(23,71,230,.35)}
+.mock-title span{color:#fff;font-style:italic;text-shadow:0 0 6px rgba(6,22,58,.35),0 0 26px rgba(23,71,230,.8),0 0 60px rgba(23,71,230,.45)}
+.follow{will-change:transform;transform:translate3d(var(--tx,0px),var(--ty,0px),0) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
+.mock{perspective:1800px}
+.win{position:relative;border-radius:14px;overflow:hidden;background:var(--win);border:1px solid var(--win-line);
+  box-shadow:0 40px 90px -20px var(--win-shadow),0 0 0 1px rgba(255,255,255,.04),
+    0 0 30px 0 rgba(23,71,230,.2),0 0 80px 4px rgba(12,40,160,.16);
+  transform:rotateY(-9deg) rotateX(3deg) rotateZ(.6deg);transform-origin:100% 50%;
+  animation:drift 9s ease-in-out 2.4s infinite alternate}
+@keyframes drift{to{transform:rotateY(-6deg) rotateX(2deg) rotateZ(.2deg) translateY(-8px)}}
+.win::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
+.mock::before{content:"";position:absolute;inset:-12% -8%;z-index:-1;pointer-events:none;border-radius:40px;
+  background:radial-gradient(closest-side,rgba(23,71,230,.22),rgba(10,34,140,.1) 55%,transparent 100%);
+  filter:blur(40px);animation:halo 5s ease-in-out infinite alternate}
+@keyframes halo{from{opacity:.7;transform:scale(.98)}to{opacity:1;transform:scale(1.02)}}
+.mock{position:relative}
+.bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--win-line);background:var(--win-side)}
+.bar i{width:10px;height:10px;border-radius:50%;background:var(--ink);opacity:.18}
+.bar b{margin-left:8px;font-size:12px;font-weight:600;color:var(--mute);letter-spacing:.02em}
+.body{display:grid;grid-template-columns:54px 1fr;min-height:clamp(260px,25vw,430px)}
+.side{display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px 0;background:var(--win-side);border-right:1px solid var(--win-line)}
+.side span{width:28px;height:28px;border-radius:9px;background:var(--ink);opacity:.12}
+.side span.on{background:var(--blue);opacity:1}
+.main{padding:16px 18px 18px}
+.search{height:32px;border-radius:999px;background:var(--win-card);border:1px solid var(--win-line);display:flex;align-items:center;padding:0 14px;
+  font-size:12px;color:var(--mute)}
+.head{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 10px}
+.head strong{font-size:15px;font-weight:600}
+.head small{font-size:11px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{border-radius:12px;background:var(--win-card);border:1px solid var(--win-line);overflow:hidden}
+.card .art{aspect-ratio:4/5;background:linear-gradient(155deg,var(--a),var(--b));position:relative}
+.card .art::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.35),transparent 55%)}
+.card em{display:block;padding:7px 9px;font-style:normal;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* real screenshot option: drop an <img class="shot"> inside .win instead of .bar/.body */
+.shot{display:block;width:100%;height:auto}
+
+.toast{position:absolute;z-index:2;left:-9%;bottom:-6%;width:52%;padding:12px 14px;border-radius:14px;background:var(--ink);color:var(--on-ink);
+  box-shadow:0 20px 40px -12px var(--win-shadow);transform:rotate(-3deg);animation:bob 6s ease-in-out 3s infinite alternate}
+@keyframes bob{to{transform:rotate(-1.5deg) translateY(-6px)}}
+.toast b{display:block;font-size:12px;font-weight:600;margin-bottom:8px}
+.toast .trk{height:6px;border-radius:99px;background:rgba(128,150,200,.35);overflow:hidden}
+.toast .trk i{display:block;height:100%;width:72%;border-radius:inherit;background:var(--blue);filter:brightness(1.25)}
+.toast small{display:block;margin-top:7px;font-size:11px;opacity:.7}
+
+@media (max-width:760px){
+  .actions{flex-direction:column;align-items:stretch;max-width:360px;gap:10px;margin-top:22px}
+  .btn{justify-content:center;padding:14px 22px}
+  .giant{font-size:clamp(42px,12.5vw,96px)}
+  .giant-inner{line-height:1.04;transform:translateY(.12em)}
+  br.m{display:block}
+}
+@media (prefers-reduced-motion:reduce){
+  .js main .c,.js .pw,.js .in{transform:none!important;filter:none!important;animation-name:calmfade!important}
+  @keyframes calmfade{from{opacity:0}to{opacity:1}}
+  .btn:hover{transform:none}
+  .win,.toast,.mock::before{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<a class="brand in" style="--d:.1s" href="/" aria-label="Flux — home">
+  <img src="logo.png" alt="Flux" width="96" height="96" />
+</a>
+
+<main>
+  <h1 class="mask" data-split="c" style="--d:.15s">Work in progress</h1>
+  <p data-split="pw" style="--d:.7s">The website is still under construction — we’re putting everything together behind the scenes. The launcher is currently in beta testing for selected testers only, while support remains available as usual.</p>
+  <p class="sr">Flux Launcher, 2026. We make gaming free.</p>
+
+  <div class="actions">
+    <a class="btn btn-primary in" style="--d:1.2s" href="https://discord.gg/cvqq6Dh6ze" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M21.8 3.2 2.5 10.6c-1 .37-.98.94.02 1.25l4.4 1.26 2.3 6.6c.35 1 1.27 1.23 2.05.51l2.94-2.7 4.13 3.32c.84.65 1.7.33 1.9-.71l3.2-15.8c.21-1.04-.43-1.58-1.42-1.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span>Become a Tester now</span>
+    </a>
+    <a class="btn btn-ghost btn-off in" style="--d:1.32s" aria-disabled="true" title="Not available yet">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Download the app</span>
+    </a>
+    <a class="btn btn-ghost in" style="--d:1.44s" href="https://discord.gg/cvqq6Dh6ze" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M21.8 3.2 2.5 10.6c-1 .37-.98.94.02 1.25l4.4 1.26 2.3 6.6c.35 1 1.27 1.23 2.05.51l2.94-2.7 4.13 3.32c.84.65 1.7.33 1.9-.71l3.2-15.8c.21-1.04-.43-1.58-1.42-1.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span>Get support</span>
+    </a>
+  </div>
+
+  <div class="farewell in" style="--d:1.6s">
+    <svg viewBox="0 0 40 40" fill="currentColor"><path fill-rule="evenodd" d="M29.5.5c5.4 0 9.9 4.4 9.9 9.8 0 5.5-4.5 9.9-9.9 9.9h9.9c0 10.9-8.8 19.7-19.7 19.7S0 31.1 0 20.2h9.8C4.4 20.2 0 15.8 0 10.3 0 4.9 4.4.5 9.8.5h19.7ZM16 10.5a3.8 3.8 0 1 1-7.5 0 3.8 3.8 0 0 1 7.5 0Zm11 3.8a3.8 3.8 0 1 0 0-7.5 3.8 3.8 0 0 0 0 7.5Z"/></svg>
+    <span><s>Pay for games</s>&nbsp;→&nbsp;Flux Launcher, 2026</span>
+  </div>
+</main>
+
+<!-- Launcher preview. To use a real screenshot, replace everything inside .win with:
+     <img class="shot" src="screenshot.webp" alt="Flux launcher interface" width="1600" height="1000"> -->
+<div class="mock-wrap" aria-hidden="true">
+  <div class="follow">
+    <div class="mock-title in" style="--d:2.2s">Flux <span>Launcher</span></div>
+    <div class="mock in" style="--d:1.9s">
+      <div class="win">
+        <img class="shot" src="ui.png" alt="Flux Launcher catalogue" width="1198" height="769">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="giant" aria-hidden="true">
+  <div class="giant-inner mask" data-split="c" style="--d:.6s">We make gaming<br class="m" /> <span class="swap"><span class="strike">paid</span><span class="site">free</span></span></div>
+</div>
+
+<script>
+(function(){
+  // split text into words/letters so each piece can animate on its own
+  document.querySelectorAll("[data-split]").forEach(function(el){
+    var cls = el.dataset.split, i = 0;
+    (function walk(node){
+      Array.from(node.childNodes).forEach(function(n){
+        if (n.nodeType === 3) {
+          var frag = document.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach(function(part){
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(" ")); return; }
+            if (cls === "pw") {
+              var s = document.createElement("span"); s.className = "pw"; s.style.setProperty("--i", i++); s.textContent = part; frag.appendChild(s);
+            } else {
+              var w = document.createElement("span"); w.className = "wd";
+              part.split("").forEach(function(ch){
+                var c = document.createElement("span"); c.className = "c"; c.style.setProperty("--i", i++); c.textContent = ch; w.appendChild(c);
+              });
+              frag.appendChild(w);
+            }
+          });
+          n.replaceWith(frag);
+        } else if (n.nodeType === 1 && n.tagName !== "BR") walk(n);
+      });
+    })(el);
+  });
+})();
+
+// launcher preview follows the mouse (smoothed)
+(function(){
+  var f = document.querySelector(".follow");
+  if (!f) return;
+  // reduced-motion users still get the effect, just gentler
+  var k = matchMedia("(prefers-reduced-motion: reduce)").matches ? .4 : 1;
+  var tx=0, ty=0, rx=0, ry=0, gx=0, gy=0, raf=null;
+  function loop(){
+    tx += (gx*80*k - tx)*.08;  ty += (gy*55*k - ty)*.08;
+    ry += (gx*9*k   - ry)*.08; rx += (-gy*7*k - rx)*.08;
+    f.style.transform = "translate3d("+tx.toFixed(2)+"px,"+ty.toFixed(2)+"px,0) rotateX("+rx.toFixed(2)+"deg) rotateY("+ry.toFixed(2)+"deg)";
+    raf = requestAnimationFrame(loop);
+  }
+  function move(e){
+    gx = (e.clientX / innerWidth  - .5) * 2;
+    gy = (e.clientY / innerHeight - .5) * 2;
+  }
+  document.addEventListener("mousemove", move, {passive:true});
+  document.addEventListener("pointermove", move, {passive:true});
+  document.documentElement.addEventListener("mouseleave", function(){ gx = gy = 0; });
+  raf = requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
